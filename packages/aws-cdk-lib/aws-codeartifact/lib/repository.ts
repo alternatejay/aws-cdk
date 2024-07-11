@@ -1,6 +1,6 @@
-import * as events from '@aws-cdk/aws-events';
-import * as iam from '@aws-cdk/aws-iam';
-import { Resource, Stack, Aws, Fn, Token, Annotations } from '@aws-cdk/core';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import { Resource, Stack, Aws, Fn, Token, Annotations, ArnFormat } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { CfnRepository } from './codeartifact.generated';
 import { ExternalConnection } from './external-connection';
@@ -95,11 +95,11 @@ export class Repository extends Resource implements IRepository {
    */
   public static fromRepositoryAttributes(scope: Construct, id: string, attrs: RepositoryAttributes): IRepository {
     const stack = Stack.of(scope);
-    const parsed = stack.parseArn(attrs.repositoryArn ?? '');
 
     if (Token.isUnresolved(attrs.repositoryArn)) {
       throw new Error(`'repositoryArn' must resolve, got: '${attrs.repositoryArn}'`);
     }
+    const parsed = stack.splitArn(attrs.repositoryArn!, ArnFormat.SLASH_RESOURCE_NAME) ?? '';
 
     const spl = Fn.split('/', parsed.resourceName ?? '');
     const domainName = Fn.select(0, spl);
@@ -196,7 +196,7 @@ export class Repository extends Resource implements IRepository {
     super(scope, id, {});
 
     const repositoryDomainName = props?.domain?.domainNameAttr;
-    const repositoryName = props.repositoryName ?? this.node.uniqueId;
+    const repositoryName = props.repositoryName ?? this.node.id;
     const repositoryDescription = props.description;
 
     this.validateProps(repositoryName, repositoryDomainName, repositoryDescription);

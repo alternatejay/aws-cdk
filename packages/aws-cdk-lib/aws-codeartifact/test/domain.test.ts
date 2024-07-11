@@ -1,8 +1,8 @@
 import '@aws-cdk/assert/jest';
 import * as cdkassert from '@aws-cdk/assert';
-import { AccountRootPrincipal, PolicyDocument, PolicyStatement, Effect, AccountPrincipal } from '@aws-cdk/aws-iam';
-import * as kms from '@aws-cdk/aws-kms';
-import { Stack } from '@aws-cdk/core';
+import { AccountRootPrincipal, PolicyDocument, PolicyStatement, Effect, AccountPrincipal } from 'aws-cdk-lib/aws-iam';
+import * as kms from 'aws-cdk-lib/aws-kms';
+import { Stack } from 'aws-cdk-lib';
 import { Domain } from '../lib';
 
 test('Create Domain', () => {

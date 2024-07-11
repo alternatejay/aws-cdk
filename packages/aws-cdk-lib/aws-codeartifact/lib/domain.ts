@@ -1,6 +1,6 @@
-import * as iam from '@aws-cdk/aws-iam';
-import * as kms from '@aws-cdk/aws-kms';
-import { Resource, Stack, Lazy, Token } from '@aws-cdk/core';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as kms from 'aws-cdk-lib/aws-kms';
+import { Resource, Stack, Lazy, Token, ArnFormat } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { CfnDomain } from './codeartifact.generated';
 import { IDomain, IRepository, DomainAttributes } from './interfaces';
@@ -58,7 +58,7 @@ export class Domain extends Resource implements IDomain {
    */
   public static fromDomainAttributes(scope: Construct, id: string, attrs: DomainAttributes): IDomain {
     const stack = Stack.of(scope);
-    const domainName = attrs.domainName || stack.parseArn(attrs.domainArn).resourceName;
+    const domainName = attrs.domainName || stack.splitArn(attrs.domainArn, ArnFormat.SLASH_RESOURCE_NAME).resourceName;
 
     if (!domainName || domainName == '') {
       throw new Error('Domain name is required as a resource name with the ARN');
@@ -91,7 +91,7 @@ export class Domain extends Resource implements IDomain {
     super(scope, id);
 
     // Set domain and encryption key as we will validate them before creation
-    const domainName = props?.domainName ?? this.node.uniqueId;
+    const domainName = props?.domainName ?? this.node.id;
     const domainEncryptionKey = props?.domainEncryptionKey ?? null;
 
     this.validateProps(domainName, domainEncryptionKey);
@@ -99,7 +99,7 @@ export class Domain extends Resource implements IDomain {
     // Create the CFN domain instance
     this.cfnDomain = new CfnDomain(this, 'Resource', {
       domainName: domainName,
-      permissionsPolicyDocument: Lazy.anyValue({ produce: () => props?.policyDocument?.toJSON() }),
+      permissionsPolicyDocument: Lazy.uncachedAny({ produce: () => props?.policyDocument?.toJSON() }),
       encryptionKey: domainEncryptionKey?.keyId,
     });
 

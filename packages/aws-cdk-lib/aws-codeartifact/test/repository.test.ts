@@ -1,7 +1,7 @@
 import '@aws-cdk/assert/jest';
 import * as cdkassert from '@aws-cdk/assert';
-import { AccountRootPrincipal, PolicyDocument, PolicyStatement, Effect } from '@aws-cdk/aws-iam';
-import { Stack } from '@aws-cdk/core';
+import { AccountRootPrincipal, PolicyDocument, PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
+import { Stack } from 'aws-cdk-lib';
 import { Domain, Repository, ExternalConnection } from '../lib';
 
 test('Domain w/ Repository', () => {

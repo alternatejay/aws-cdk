@@ -1,7 +1,7 @@
-import * as events from '@aws-cdk/aws-events';
-import * as iam from '@aws-cdk/aws-iam';
-import * as kms from '@aws-cdk/aws-kms';
-import { IResource } from '@aws-cdk/core';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as kms from 'aws-cdk-lib/aws-kms';
+import { IResource } from 'aws-cdk-lib';
 
 /**
  * Represents a CodeArtifact repository
