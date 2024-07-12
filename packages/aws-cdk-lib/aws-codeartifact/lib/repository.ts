@@ -195,7 +195,7 @@ export class Repository extends Resource implements IRepository {
   constructor(scope: Construct, id: string, props: RepositoryProps) {
     super(scope, id, {});
 
-    const repositoryDomainName = props?.domain?.domainNameAttr;
+    const repositoryDomainName = props?.domain?.domainName;
     const repositoryName = props.repositoryName ?? this.node.id;
     const repositoryDescription = props.description;
 
