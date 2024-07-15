@@ -371,7 +371,7 @@ export class Repository extends Resource implements IRepository {
     // This should be added to the L1 props soon, but until then this is required to create a Repository
     // this.cfnRepository.node.addDependency(domain);
 
-    this.cfnRepository.domainName = domain.domainNameAttr ?? '';
+    this.cfnRepository.domainName = domain.domainName ?? '';
   }
 
   /**

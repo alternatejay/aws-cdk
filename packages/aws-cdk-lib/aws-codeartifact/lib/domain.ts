@@ -22,19 +22,13 @@ export interface IDomain extends IResource {
    * The physical name of the domain resource.
    * @attribute
    */
-  readonly domainName?: string;
-  /**
-   * The attribute name of the domain resource.
-   * @attribute
-   */
-  readonly domainNameAttr?: string;
+  readonly domainName: string;
 
   /**
-   * The domain owner
-   * Often, equivalent to the account id.
+   * The domain owner AWS account id, enables cross-account domains.
    * @attribute
    */
-  readonly domainOwner?: string;
+  readonly domainOwner: string;
 
   /**
    * The KMS encryption key used for the domain resource.
@@ -50,51 +44,27 @@ export interface IDomain extends IResource {
 }
 
 /**
- * Reference to a domain
+ * Properties for referring to a CDK-external domain
  * @experimental
  */
 export interface DomainAttributes {
   /**
- * The ARN of domain resource.
- * Equivalent to doing `{ 'Fn::GetAtt': ['LogicalId', 'Arn' ]}`
- * in CloudFormation if the underlying CloudFormation resource
- * surfaces the ARN as a return value -
- * if not, we usually construct the ARN "by hand" in the construct,
- * using the Fn::Join function.
- *
- * It needs to be annotated with '@attribute' if the underlying CloudFormation resource
- * surfaces the ARN as a return value.
- *
- * @attribute
- */
-  readonly domainArn: string;
+   * full ARN of a CodeArtifact domain
+   * should look like this: arn:aws:codeartifact:{region}:{account}:domain/{domain}
+   */
+  readonly domainArn?: string;
 
   /**
    * The physical name of the domain resource.
-   * Often, equivalent to doing `{ 'Ref': 'LogicalId' }`
-   * (but not always - depends on the particular resource modeled)
-   * in CloudFormation.
-   * Also needs to be annotated with '@attribute'.
-   * @default Empty string
-   *
-   * @attribute
    */
   readonly domainName?: string;
 
   /**
    * The domain owner
-   * Often, equivalent to the account id.
-   * @default Empty string
+   * @default the account in which the CDK stack is deployed
    * @attribute
    */
   readonly domainOwner?: string;
-
-  /**
-   * The KMS encryption key used for the domain resource.
-   * @default AWS Managed Key
-   * @attribute
-   */
-  readonly domainEncryptionKey?: kms.IKey;
 }
 
 /**
@@ -128,6 +98,48 @@ export interface DomainProps {
 }
 
 /**
+ * An imported CodeArtifact domain
+ */
+class ImportedDomain extends Resource implements IDomain {
+  public readonly domainArn: string;
+  public readonly domainName: string;
+  public readonly domainOwner: string;
+
+  constructor(scope: Construct, id: string, props: DomainAttributes) {
+    super(scope, id);
+
+    if (props.domainArn && props.domainName) {
+      throw new Error('domainArn and domainName are mutually exclusive');
+    }
+    if (props.domainArn && props.domainOwner) {
+      throw new Error('domainArn and domainOwner are mutually exclusive');
+    }
+
+    if (props.domainArn) {
+      this.domainArn = props.domainArn;
+      this.domainName = Stack.of(this).splitArn(props.domainArn, ArnFormat.SLASH_RESOURCE_NAME).resourceName!;
+      this.domainOwner = props.domainArn.split(':')[4];
+    }
+
+    if (props.domainName) {
+      this.domainName = props.domainName;
+      if (!props.domainOwner) {
+        this.domainOwner = Stack.of(this).account
+      } else {
+        this.domainOwner = props.domainOwner;
+      }
+      this.domainArn = Stack.of(this).formatArn({
+        service: 'codeartifact',
+        resource: 'domain',
+        resourceName: props.domainName,
+        arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
+        account: this.domainOwner,
+      });
+    }
+  }
+}
+
+/**
  * A new CodeArtifacft domain
  * @experimental
  */
@@ -140,39 +152,19 @@ export class Domain extends Resource implements IDomain {
  * @param domainArn Domain ARN (i.e. arn:aws:codeartifact:us-east-2:444455556666:domain/MyDomain)
  */
   public static fromDomainArn(scope: Construct, id: string, domainArn: string): IDomain {
-    return Domain.fromDomainAttributes(scope, id, { domainArn: domainArn });
+    return new ImportedDomain(scope, id, { domainArn: domainArn});
   }
 
   /**
    * Import an existing domain
    */
   public static fromDomainAttributes(scope: Construct, id: string, attrs: DomainAttributes): IDomain {
-    const stack = Stack.of(scope);
-    const domainName = attrs.domainName || stack.splitArn(attrs.domainArn, ArnFormat.SLASH_RESOURCE_NAME).resourceName;
-
-    if (!domainName || domainName == '') {
-      throw new Error('Domain name is required as a resource name with the ARN');
-    }
-
-    class Import extends Resource implements IDomain {
-      domainArn: string = '';
-      domainName?: string | undefined;
-      domainOwner?: string | undefined;
-      domainEncryptionKey?: kms.IKey | undefined;
-    }
-
-    const instance = new Import(scope, id);
-    instance.domainName = domainName;
-    instance.domainArn = attrs.domainArn;
-    instance.domainEncryptionKey = attrs.domainEncryptionKey;
-
-    return instance;
+    return new ImportedDomain(scope, id, attrs);
   }
 
-  public readonly domainName?: string;
-  public readonly domainNameAttr?: string;
-  public readonly domainArn: string = '';
-  public readonly domainOwner?: string = '';
+  public readonly domainName: string;
+  public readonly domainArn: string;
+  public readonly domainOwner: string;
   public readonly domainEncryptionKey?: kms.IKey;
   public readonly policyDocument?: iam.PolicyDocument;
   private readonly cfnDomain: CfnDomain;
@@ -194,7 +186,6 @@ export class Domain extends Resource implements IDomain {
     });
 
     this.domainName = domainName;
-    this.domainNameAttr = this.cfnDomain.attrName;
     this.domainArn = this.cfnDomain.attrArn;
     this.domainOwner = this.cfnDomain.attrOwner;
     this.policyDocument = props?.policyDocument;
