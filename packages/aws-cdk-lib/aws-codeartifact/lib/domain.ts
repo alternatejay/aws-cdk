@@ -3,7 +3,7 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 import { Resource, Stack, Lazy, Token, ArnFormat, IResource } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { CfnDomain } from './codeartifact.generated';
-import { IRepository } from './interfaces';
+import { IRepository } from './repository';
 import { DOMAIN_CREATE_ACTIONS, DOMAIN_LOGIN_ACTIONS, DOMAIN_READ_ACTIONS } from './perms';
 import { validate } from './validation';
 
