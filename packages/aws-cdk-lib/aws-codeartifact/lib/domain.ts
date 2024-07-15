@@ -1,11 +1,101 @@
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
-import { Resource, Stack, Lazy, Token, ArnFormat } from 'aws-cdk-lib';
+import { Resource, Stack, Lazy, Token, ArnFormat, IResource } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { CfnDomain } from './codeartifact.generated';
-import { IDomain, IRepository, DomainAttributes } from './interfaces';
+import { IRepository } from './interfaces';
 import { DOMAIN_CREATE_ACTIONS, DOMAIN_LOGIN_ACTIONS, DOMAIN_READ_ACTIONS } from './perms';
 import { validate } from './validation';
+
+/**
+ * Represents a CodeArtifact domain
+ * @experimental
+ */
+export interface IDomain extends IResource {
+  /**
+* The ARN of domain resource.
+* @attribute
+*/
+  readonly domainArn: string;
+
+  /**
+   * The physical name of the domain resource.
+   * @attribute
+   */
+  readonly domainName?: string;
+  /**
+   * The attribute name of the domain resource.
+   * @attribute
+   */
+  readonly domainNameAttr?: string;
+
+  /**
+   * The domain owner
+   * Often, equivalent to the account id.
+   * @attribute
+   */
+  readonly domainOwner?: string;
+
+  /**
+   * The KMS encryption key used for the domain resource.
+   * @default AWS Managed Key
+   * @attribute
+   */
+  readonly domainEncryptionKey?: kms.IKey;
+
+  /**
+   * Resource policy for the domain
+   */
+  readonly policyDocument?: iam.PolicyDocument
+}
+
+/**
+ * Reference to a domain
+ * @experimental
+ */
+export interface DomainAttributes {
+  /**
+ * The ARN of domain resource.
+ * Equivalent to doing `{ 'Fn::GetAtt': ['LogicalId', 'Arn' ]}`
+ * in CloudFormation if the underlying CloudFormation resource
+ * surfaces the ARN as a return value -
+ * if not, we usually construct the ARN "by hand" in the construct,
+ * using the Fn::Join function.
+ *
+ * It needs to be annotated with '@attribute' if the underlying CloudFormation resource
+ * surfaces the ARN as a return value.
+ *
+ * @attribute
+ */
+  readonly domainArn: string;
+
+  /**
+   * The physical name of the domain resource.
+   * Often, equivalent to doing `{ 'Ref': 'LogicalId' }`
+   * (but not always - depends on the particular resource modeled)
+   * in CloudFormation.
+   * Also needs to be annotated with '@attribute'.
+   * @default Empty string
+   *
+   * @attribute
+   */
+  readonly domainName?: string;
+
+  /**
+   * The domain owner
+   * Often, equivalent to the account id.
+   * @default Empty string
+   * @attribute
+   */
+  readonly domainOwner?: string;
+
+  /**
+   * The KMS encryption key used for the domain resource.
+   * @default AWS Managed Key
+   * @attribute
+   */
+  readonly domainEncryptionKey?: kms.IKey;
+}
 
 /**
  * Properties for a new CodeArtifact domain
