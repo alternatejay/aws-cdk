@@ -45,19 +45,6 @@ const repository = new codeartifact.Repository(stack, 'repository', {
 });
 ```
 
-It is possible to use the `addRepository` method on `codeartifact.Domain` to add repostories implicitly.
-
-```ts
-import * as codeartifact from '@aws-cdk/aws-codeartifact';
-
-const domain = new codeartifact.Domain(stack, 'domain', { domainName: 'example-domain' });
-const repo1 = new codeartifact.Repository(stack, 'repository_1', { repositoryName: 'repository-1' });
-const repo2 = new codeartifact.Repository(stack, 'repository_2', { repositoryName: 'repository-2' });
-
-domain.addRepositories(repo1, repo2);
-
-```
-
 ## External Connections
 
 Extenal connections can be added by calling `.withExternalConnections(...)` method on a repository. It accepts and

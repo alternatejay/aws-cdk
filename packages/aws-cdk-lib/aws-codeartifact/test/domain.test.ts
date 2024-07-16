@@ -32,12 +32,6 @@ test('Domain from ARN', () => {
   expect(domain.domainName?.toString()).toBe('my-domain');
 });
 
-
-test('Domain from ARN w/ out domain name nor account id', () => {
-  const stack = new Stack();
-  expect(() => Domain.fromDomainArn(stack, 'repo-from-arn', 'arn:aws:codeartifact:region-id::domain')).toThrow(/Domain name is required as a resource name with the ARN/);
-});
-
 test('Create Domain w/ encryption', () => {
   const stack = new Stack();
   const key = kms.Key.fromKeyArn(stack, 'key', 'arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab');

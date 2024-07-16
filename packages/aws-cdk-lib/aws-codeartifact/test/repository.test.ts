@@ -63,7 +63,7 @@ test('Domain w/ 2 Repositories via constructor, w/ upstream, and external connec
   }));
 });
 
-test('Domain w/ 2 Repositories via addRepositories, w/ upstream, and external connection', () => {
+test('Domain w/ 2 Repositories, w/ upstream, and external connection', () => {
   const stack = new Stack();
 
   const domain = new Domain(stack, 'domain', { domainName: 'example-domain' });
@@ -72,8 +72,6 @@ test('Domain w/ 2 Repositories via addRepositories, w/ upstream, and external co
 
   repo1.withExternalConnections(ExternalConnection.NPM);
   repo2.withUpstream(repo1);
-
-  domain.addRepositories(repo1, repo2);
 
   cdkassert.expect(stack).to(cdkassert.haveResource('AWS::CodeArtifact::Domain', {
     DomainName: domain.domainName,

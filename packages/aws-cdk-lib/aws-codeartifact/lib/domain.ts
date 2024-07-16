@@ -191,17 +191,6 @@ export class Domain extends Resource implements IDomain {
     this.policyDocument = props?.policyDocument;
   }
 
-  /**
-   * Add a repositories to the domain
-   */
-  addRepositories(...repositories: IRepository[]): IDomain {
-    if (repositories.length > 0) {
-      repositories.forEach(r => r.assignDomain(this));
-    }
-
-    return this;
-  }
-
   private validateProps(domainName : string, domainEncryptionKey? : kms.IKey | null) {
     if (Token.isUnresolved(domainName)) {
       throw new Error(`'domainName' must resolve, got: '${domainName}'`);
