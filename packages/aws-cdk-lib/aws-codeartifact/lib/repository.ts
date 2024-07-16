@@ -176,6 +176,53 @@ export interface PolicyRepositoryPackage {
 }
 
 /**
+ * An imported CodeArtifact repository
+ */
+class ImportedRepository extends Resource implements IRespository {
+  public repositoryArn: string;
+  public repositoryName: string;
+  public repositoryDomainName: string;
+  public repositoryDomainOwner: string;
+
+  constructor(scope: Construct, id: string, props: RepositoryAttributes) {
+    super(scope, id);
+
+    if (props.repositoryArn && props.repositoryName) {
+      throw new Error("repositoryArn and repositoryName are mutually exclusive");
+    }
+
+    if (props.repositoryArn && props.repositoryDomainName) {
+      throw new Error("repositoryArn and repositoryDomainName are mutually exclusive");
+    }
+
+    if (props.repositoryArn && props.repositoryDomainOwner) {
+      throw new Error("repositoryArn and repositoryDomainOwner are mutually exclusive");
+    }
+
+    if (!props.repositoryArn && !(props.repositoryName && props.repositoryDomainName && props.repositoryDomainOwner)) {
+      throw new Error("Either repositoryArn or repositoryName, repositoryDomainName and repositoryDomainOwner must be provided");
+    }
+
+    if (props.repositoryArn) {
+      const arn = Stack.of(this).splitArn(props.repositoryArn, ArnFormat.SLASH_RESOURCE_NAME);
+      const domainRepo = arn.resourceName?.split("/") ?? "";
+      this.repositoryName = domainRepo[1];
+      this.repositoryDomainName = domainRepo[2];
+      this.repositoryDomainOwner = arn.account ?? "";
+      this.repositoryArn = props.repositoryArn;
+    } else {
+      if (props.repositoryName && props.repositoryDomainName && props.repositoryDomainOwner) {
+        this.repositoryName = props.repositoryName;
+        this.repositoryDomainName = props.repositoryDomainName;
+        this.repositoryDomainOwner = props.repositoryDomainOwner;
+      } else {
+        throw new Error("Either repositoryArn or repositoryName, repositoryDomainName and repositoryDomainOwner must be provided");
+      }
+    }
+  }
+}
+
+/**
  * A new CodeArtifacft repository
  * @experimental
  */
@@ -188,71 +235,14 @@ export class Repository extends Resource implements IRepository {
      * @param repositoryArn repository ARN (i.e. arn:aws:codeartifact:us-east-2:444455556666:repository/my-domain/my-repo)
      */
   public static fromRepositoryArn(scope: Construct, id: string, repositoryArn: string): IRepository {
-    return Repository.fromRepositoryAttributes(scope, id, { repositoryArn: repositoryArn });
+    return new ImportedRepository(scope, id, {repositoryArn:repositoryArn});
   }
 
   /**
    * Import an existing repository
    */
   public static fromRepositoryAttributes(scope: Construct, id: string, attrs: RepositoryAttributes): IRepository {
-    const stack = Stack.of(scope);
-
-    if (Token.isUnresolved(attrs.repositoryArn)) {
-      throw new Error(`'repositoryArn' must resolve, got: '${attrs.repositoryArn}'`);
-    }
-    const parsed = stack.splitArn(attrs.repositoryArn!, ArnFormat.SLASH_RESOURCE_NAME) ?? '';
-
-    const spl = Fn.split('/', parsed.resourceName ?? '');
-    const domainName = Fn.select(0, spl);
-    const repositoryName = Fn.select(1, spl);
-
-    if (!repositoryName || repositoryName == '') {
-      throw new Error('\'RepositoryName\' is required and cannot be empty');
-    }
-
-    if (!domainName || domainName == '') {
-      throw new Error('Domain name is required with the ARN');
-    }
-
-    class Import extends Resource implements IRepository {
-      repositoryDescription?: string | undefined;
-      repositoryDomainName?: string | undefined;
-      repositoryArn = attrs.repositoryArn;
-      repositoryName = repositoryName as string;
-      repositoryDomainOwner = parsed.account ?? '';
-
-      grantFactory(operation: string, _identity: iam.IGrantable): iam.Grant {
-        Annotations.of(this).addWarning(`${operation} is a no-op`);
-        return iam.Grant.drop(_identity, 'no-op');
-      }
-
-      grantRead(_identity: iam.IGrantable): iam.Grant { return this.grantFactory('grantRead', _identity); };
-
-      grantWrite(_identity: iam.IGrantable): iam.Grant { return this.grantFactory('grantWrite', _identity); };
-
-      grantReadWrite(_identity: iam.IGrantable): iam.Grant { return this.grantFactory('grantReadWrite', _identity); };
-
-      onEvent(_id: string, _options?: events.OnEventOptions | undefined): events.Rule {
-        return Repository._onEvent(this, _id, this, _options);
-      }
-
-      onPackageVersionStateChange(_id: string, _options?: events.OnEventOptions | undefined): events.Rule {
-        return Repository._onPackageVersionStateChange(this, _id, this, _options);
-      }
-
-      assignDomain(_domain: IDomain): void {
-        Annotations.of(this).addWarning('assignDomain is a no-op');
-        this.repositoryDomainName = _domain.domainName;
-        this.repositoryDomainOwner = _domain.domainOwner ?? '';
-      }
-    }
-
-    const instance = new Import(scope, id);
-    instance.repositoryName = repositoryName;
-    instance.repositoryDomainName = domainName;
-    instance.repositoryDomainOwner = parsed.account || '';
-
-    return instance;
+    return new ImportedRepository(scope, id, attrs);
   }
 
   /**
@@ -285,11 +275,10 @@ export class Repository extends Resource implements IRepository {
     return rule;
   }
 
-  public readonly repositoryArn?: string;
+  public readonly repositoryArn: string;
   public readonly repositoryName: string;
-  public readonly repositoryNameAttr?: string;
-  public readonly repositoryDomainOwner?: string;
-  public readonly repositoryDomainName?: string;
+  public readonly repositoryDomainOwner: string;
+  public readonly repositoryDomainName: string;
   public readonly repositoryDescription?: string;
   private readonly cfnRepository: CfnRepository;
 
@@ -297,6 +286,7 @@ export class Repository extends Resource implements IRepository {
     super(scope, id, {});
 
     const repositoryDomainName = props?.domain?.domainName;
+    const repositoryDomainOwner = props.domain.domainOwner;
     const repositoryName = props.repositoryName ?? this.node.id;
     const repositoryDescription = props.description;
 
@@ -304,6 +294,7 @@ export class Repository extends Resource implements IRepository {
 
     this.cfnRepository = new CfnRepository(this, id, {
       domainName: repositoryDomainName ?? '', //this is required but need coalesce. The validation will catch this.
+      domainOwner: domainOwner,
       repositoryName: repositoryName,
       description: repositoryDescription,
       upstreams: props.upstreams?.map(u => u.repositoryName),
@@ -316,7 +307,6 @@ export class Repository extends Resource implements IRepository {
 
     this.repositoryArn = this.cfnRepository.attrArn;
     this.repositoryName = repositoryName;
-    this.repositoryNameAttr = this.cfnRepository.attrName;
     this.repositoryDomainOwner = this.cfnRepository.attrDomainOwner;
     this.repositoryDomainName = this.cfnRepository.attrDomainName;
     this.repositoryDescription = this.cfnRepository.description;
@@ -345,7 +335,6 @@ export class Repository extends Resource implements IRepository {
    */
   public addToResourcePolicy(statement: iam.PolicyStatement): iam.AddToResourcePolicyResult {
 
-    if (!this.cfnRepository.permissionsPolicyDocument) {
       const p = this.cfnRepository.permissionsPolicyDocument as iam.PolicyDocument || new iam.PolicyDocument();
 
       p.addStatements(statement);
@@ -353,9 +342,6 @@ export class Repository extends Resource implements IRepository {
       this.cfnRepository.permissionsPolicyDocument = p;
 
       return { statementAdded: true, policyDependable: p };
-    }
-
-    return { statementAdded: false };
   }
 
   public grantRead(identity: iam.IGrantable): iam.Grant {
@@ -375,6 +361,7 @@ export class Repository extends Resource implements IRepository {
       grantee: identity,
       actions: actions,
       resourceArns: [this.repositoryArn || ''],
+      resourceSelfArns: ["*"],
       resource: this,
     });
   }
