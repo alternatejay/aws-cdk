@@ -5,13 +5,13 @@
  */
 export enum ExternalConnection {
   /**
-   * NPM public registry
+   * npm public registry
    */
-  NPM = 'public:npmjs',
+  NPM_NPMJS = 'public:npmjs',
   /**
-   * NuGet.org public registry
+   * NuGet Gallery
    */
-  DOTNET_NUGETORG = 'public:nuget-org',
+  NUGET_NUGETORG = 'public:nuget-org',
   /**
    * Python Package Index
    */
@@ -30,6 +30,18 @@ export enum ExternalConnection {
   MAVEN_GRADLEPLUGINS = 'public:maven-gradleplugins',
   /**
    * CommonsWare Android repository
-   * */
+   */
   MAVEN_COMMONSWARE = 'public:maven-commonsware',
+  /**
+   * Clojars repository
+   */
+  MAVEN_CLOJARS = 'public:maven-clojars',
+  /**
+   * RubyGems.org
+   */
+  RUBY_RUBYGEMS = 'public:ruby-gems-org',
+  /**
+   * Crates.io
+   */
+  RUST_CRATESIO = 'public:crates-io',
 }
