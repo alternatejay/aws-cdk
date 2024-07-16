@@ -4,44 +4,44 @@
  * @see https://docs.aws.amazon.com/codeartifact/latest/ug/external-connection.html#supported-public-repositories
  */
 export enum ExternalConnection {
-  /**
-   * npm public registry
-   */
-  NPM_NPMJS = 'public:npmjs',
-  /**
-   * NuGet Gallery
-   */
-  NUGET_NUGETORG = 'public:nuget-org',
-  /**
-   * Python Package Index
-   */
-  PYTHON_PYPI = 'public:pypi',
-  /**
-   * Maven Central
-   */
-  MAVEN_CENTRAL = 'public:maven-central',
-  /**
-   * Google Android repository
-   */
-  MAVEN_GOOGLEANDROID = 'public:maven-googleandroid',
-  /**
-   * Gradle plugins repository
-   */
-  MAVEN_GRADLEPLUGINS = 'public:maven-gradleplugins',
-  /**
-   * CommonsWare Android repository
-   */
-  MAVEN_COMMONSWARE = 'public:maven-commonsware',
-  /**
-   * Clojars repository
-   */
-  MAVEN_CLOJARS = 'public:maven-clojars',
-  /**
-   * RubyGems.org
-   */
-  RUBY_RUBYGEMS = 'public:ruby-gems-org',
-  /**
-   * Crates.io
-   */
-  RUST_CRATESIO = 'public:crates-io',
+    /**
+     * npm public registry
+     */
+    NPM_NPMJS = "public:npmjs",
+    /**
+     * NuGet Gallery
+     */
+    NUGET_NUGETORG = "public:nuget-org",
+    /**
+     * Python Package Index
+     */
+    PYTHON_PYPI = "public:pypi",
+    /**
+     * Maven Central
+     */
+    MAVEN_CENTRAL = "public:maven-central",
+    /**
+     * Google Android repository
+     */
+    MAVEN_GOOGLEANDROID = "public:maven-googleandroid",
+    /**
+     * Gradle plugins repository
+     */
+    MAVEN_GRADLEPLUGINS = "public:maven-gradleplugins",
+    /**
+     * CommonsWare Android repository
+     */
+    MAVEN_COMMONSWARE = "public:maven-commonsware",
+    /**
+     * Clojars repository
+     */
+    MAVEN_CLOJARS = "public:maven-clojars",
+    /**
+     * RubyGems.org
+     */
+    RUBY_RUBYGEMS = "public:ruby-gems-org",
+    /**
+     * Crates.io
+     */
+    RUST_CRATESIO = "public:crates-io"
 }
