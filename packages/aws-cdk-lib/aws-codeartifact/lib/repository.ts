@@ -28,7 +28,7 @@ export interface IRepository extends IResource {
      * @default Empty string
      * @attribute
      */
-  readonly repositoryArn?: string;
+  readonly repositoryArn: string;
   /**
        * The physical name of the repository resource.
        * Often, equivalent to doing `{ 'Ref': 'LogicalId' }`
@@ -40,12 +40,6 @@ export interface IRepository extends IResource {
        */
   readonly repositoryName: string;
   /**
-     * Name the repository from CFN attribute
-       * @default Empty string
-       * @attribute
-     */
-  readonly repositoryNameAttr?: string,
-  /**
       * A text description of the repository.
       * @attribute
       */
@@ -56,41 +50,13 @@ export interface IRepository extends IResource {
        * @default Empty string
        * @attribute
        */
-  readonly repositoryDomainOwner?: string;
+  readonly repositoryDomainOwner: string;
   /**
        * The domain the repository belongs to
        * @default Empty string
        * @attribute
        */
-  readonly repositoryDomainName?: string;
-  /**
-       * Grants the given IAM identity permissions to read from the repository
-       */
-  grantRead(identity: iam.IGrantable): iam.Grant;
-  /**
-       * Grants the given IAM identity permissions to write from the repository
-       */
-  grantWrite(identity: iam.IGrantable): iam.Grant;
-  /**
-       * Grants the given IAM identity permissions to read/write from the repository
-       */
-  grantReadWrite(identity: iam.IGrantable): iam.Grant;
-  /**
-       * Defines a CloudWatch event rule which triggers for repository events. Use
-       * `rule.addEventPattern(pattern)` to specify a filter.
-       */
-  onEvent(id: string, options?: events.OnEventOptions): events.Rule;
-  /**
-       * Defines a CloudWatch event rule which triggers when a "CodeArtifact Package
-       *  Version State Change" event occurs.
-       */
-  onPackageVersionStateChange(id: string, options?: events.OnEventOptions): events.Rule;
-
-  /**
-   * Set the domain for the repository
-   * @param domain The domain the repository is apart of
-   */
-  assignDomain(domain: IDomain): void;
+  readonly repositoryDomainName: string;
 }
 
 /**
