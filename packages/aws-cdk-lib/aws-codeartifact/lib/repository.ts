@@ -302,7 +302,7 @@ export class Repository extends Resource implements IRepository {
 
         this.validateProps(repositoryName, repositoryDomainName, repositoryDescription);
 
-        this.cfnRepository = new CfnRepository(this, id, {
+        this.cfnRepository = new CfnRepository(this, 'Resource', {
             domainName: repositoryDomainName ?? "", //this is required but need coalesce. The validation will catch this.
             domainOwner: repositoryDomainOwner,
             repositoryName: repositoryName,
