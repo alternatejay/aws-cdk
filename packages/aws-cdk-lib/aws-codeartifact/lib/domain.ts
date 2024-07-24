@@ -116,6 +116,9 @@ class ImportedDomain extends Resource implements IDomain {
         }
 
         if (props.domainArn) {
+            if (Stack.of(this).splitArn(props.domainArn, ArnFormat.SLASH_RESOURCE_NAME).resource != "domain") {
+                throw new Error("domainArn must point to a domain resource");
+            }
             this.domainArn = props.domainArn;
             this.domainName = Stack.of(this).splitArn(props.domainArn, ArnFormat.SLASH_RESOURCE_NAME).resourceName!;
             this.domainOwner = props.domainArn.split(":")[4];
