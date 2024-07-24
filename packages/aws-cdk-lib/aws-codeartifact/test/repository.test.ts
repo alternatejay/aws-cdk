@@ -57,7 +57,7 @@ test("Domain w/ 2 Repositories via constructor, w/ upstream, and external connec
     const repo1 = new Repository(stack, "repository-1", {
         repositoryName: "example-repo-1",
         domain: domain,
-        externalConnections: [ExternalConnection.NPM]
+        externalConnections: [ExternalConnection.NPM_NPMJS]
     });
     new Repository(stack, "repository-2", {repositoryName: "example-repo-2", domain: domain, upstreams: [repo1]});
 
@@ -89,7 +89,7 @@ test("Domain w/ 2 Repositories, w/ upstream, and external connection", () => {
     const repo1 = new Repository(stack, "repository-1", {repositoryName: "example-repo-1", domain: domain});
     const repo2 = new Repository(stack, "repository-2", {repositoryName: "example-repo-2", domain: domain});
 
-    repo1.withExternalConnections(ExternalConnection.NPM);
+    repo1.withExternalConnections(ExternalConnection.NPM_NPMJS);
     repo2.withUpstream(repo1);
 
     cdkassert.expect(stack).to(
