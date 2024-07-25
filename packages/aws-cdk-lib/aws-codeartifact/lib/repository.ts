@@ -3,7 +3,7 @@ import * as events from "aws-cdk-lib/aws-events";
 import * as iam from "aws-cdk-lib/aws-iam";
 import {Construct} from "constructs";
 import {CfnRepository} from "./codeartifact.generated";
-import {IDomain} from "./domain";
+import {Domain, IDomain} from "./domain";
 import {ExternalConnection} from "./external-connection";
 import {REPOSITORY_READ_ACTIONS, REPOSITORY_WRITE_ACTIONS} from "./perms";
 import {validate} from "./validation";
@@ -44,18 +44,9 @@ export interface IRepository extends IResource {
      */
     readonly repositoryDescription?: string;
     /**
-     * The domain repository owner
-     * Often, equivalent to the account id.
-     * @default Empty string
-     * @attribute
-     */
-    readonly repositoryDomainOwner: string;
-    /**
      * The domain the repository belongs to
-     * @default Empty string
-     * @attribute
      */
-    readonly repositoryDomainName: string;
+    readonly repositoryDomain: IDomain;
 }
 
 /**
@@ -93,18 +84,10 @@ export interface RepositoryAttributes {
      */
     readonly repositoryDescription?: string;
     /**
-     * The domain repository owner
-     * Often, equivalent to the account id.
-     * @default Empty string
-     * @attribute
-     */
-    readonly repositoryDomainOwner?: string;
-    /**
      * The domain the repository belongs to
      * @default Empty string
-     * @attribute
      */
-    readonly repositoryDomainName?: string;
+    readonly repositoryDomain?: IDomain;
 }
 
 /**
@@ -127,7 +110,7 @@ export interface RepositoryProps {
      * @attribute
      * @default None
      */
-    readonly domain: IDomain;
+    readonly repositoryDomain: IDomain;
     /**
      * Upstream repositories for the repository
      * @see https://docs.aws.amazon.com/codeartifact/latest/ug/repos-upstream.html
@@ -185,8 +168,7 @@ export interface PolicyRepositoryPackage {
 class ImportedRepository extends Resource implements IRepository {
     public repositoryArn: string;
     public repositoryName: string;
-    public repositoryDomainName: string;
-    public repositoryDomainOwner: string;
+    public repositoryDomain: IDomain;
 
     constructor(scope: Construct, id: string, props: RepositoryAttributes) {
         super(scope, id);
@@ -195,33 +177,30 @@ class ImportedRepository extends Resource implements IRepository {
             throw new Error("repositoryArn and repositoryName are mutually exclusive");
         }
 
-        if (props.repositoryArn && props.repositoryDomainName) {
-            throw new Error("repositoryDomainName and repositoryArn are mutually exclusive");
+        if (props.repositoryArn && props.repositoryDomain) {
+            throw new Error("repositoryDomain and repositoryArn are mutually exclusive");
         }
 
-        if (props.repositoryArn && props.repositoryDomainOwner) {
-            throw new Error("repositoryDomainOwner and repositoryArn are mutually exclusive");
-        }
-
-        if (!props.repositoryArn && !(props.repositoryName && props.repositoryDomainName && props.repositoryDomainOwner)) {
-            throw new Error("Either repositoryArn or repositoryName, repositoryDomainName and repositoryDomainOwner must be provided");
+        if (!props.repositoryArn && !(props.repositoryName && props.repositoryDomain)) {
+            throw new Error("Either repositoryArn or repositoryName, repositoryDomain must be provided");
         }
 
         if (props.repositoryArn) {
             const arn = Stack.of(this).splitArn(props.repositoryArn, ArnFormat.SLASH_RESOURCE_NAME);
             const domainRepo = arn.resourceName?.split("/") ?? "";
             this.repositoryName = domainRepo[1];
-            this.repositoryDomainName = domainRepo[2];
-            this.repositoryDomainOwner = arn.account ?? "";
+            this.repositoryDomain = Domain.fromDomainAttributes(this, "ImportedDomain", {
+                domainName: domainRepo[2],
+                domainOwner: arn.account ?? ""
+            });
             this.repositoryArn = props.repositoryArn;
             //throw new Error(`could not parse arn ${props.repositoryArn}`);
         } else {
-            if (props.repositoryName && props.repositoryDomainName && props.repositoryDomainOwner) {
+            if (props.repositoryName && props.repositoryDomain) {
                 this.repositoryName = props.repositoryName;
-                this.repositoryDomainName = props.repositoryDomainName;
-                this.repositoryDomainOwner = props.repositoryDomainOwner;
+                this.repositoryDomain = props.repositoryDomain;
             } else {
-                throw new Error("Either repositoryArn or repositoryName, repositoryDomainName and repositoryDomainOwner must be provided");
+                throw new Error("Either repositoryArn or repositoryName, repositoryDomain must be provided");
             }
         }
     }
@@ -259,8 +238,8 @@ export class Repository extends Resource implements IRepository {
         rule.addEventPattern({
             source: ["aws.codeartifact"],
             detail: {
-                domainName: [context.repositoryDomainName],
-                domainOwner: [context.repositoryDomainOwner],
+                domainName: [context.repositoryDomain.domainName],
+                domainOwner: [context.repositoryDomain.domainOwner],
                 repositoryName: [context.repositoryName]
             }
         });
@@ -287,16 +266,15 @@ export class Repository extends Resource implements IRepository {
 
     public readonly repositoryArn: string;
     public readonly repositoryName: string;
-    public readonly repositoryDomainOwner: string;
-    public readonly repositoryDomainName: string;
+    public readonly repositoryDomain: IDomain;
     public readonly repositoryDescription?: string;
     private readonly cfnRepository: CfnRepository;
 
     constructor(scope: Construct, id: string, props: RepositoryProps) {
         super(scope, id, {});
 
-        const repositoryDomainName = props?.domain?.domainName;
-        const repositoryDomainOwner = props.domain.domainOwner;
+        const repositoryDomainName = props.repositoryDomain.domainName;
+        const repositoryDomainOwner = props.repositoryDomain.domainOwner;
         const repositoryName = props.repositoryName ?? this.node.id;
         const repositoryDescription = props.description;
 
@@ -317,8 +295,7 @@ export class Repository extends Resource implements IRepository {
 
         this.repositoryArn = this.cfnRepository.attrArn;
         this.repositoryName = repositoryName;
-        this.repositoryDomainOwner = this.cfnRepository.attrDomainOwner;
-        this.repositoryDomainName = this.cfnRepository.attrDomainName;
+        this.repositoryDomain = props.repositoryDomain;
         this.repositoryDescription = this.cfnRepository.description;
 
         if (!props.policyDocument) {
@@ -389,8 +366,8 @@ export class Repository extends Resource implements IRepository {
         rule.addEventPattern({
             source: ["aws.codeartifact"],
             detail: {
-                domainName: [this.repositoryDomainName],
-                domainOwner: [this.repositoryDomainOwner],
+                domainName: [this.repositoryDomain.domainName],
+                domainOwner: [this.repositoryDomain.domainOwner],
                 repositoryName: [this.repositoryName]
             }
         });
@@ -559,8 +536,8 @@ export class Repository extends Resource implements IRepository {
      * @param repositoryPackage The package to formulate the arn for
      */
     public packageArn(repositoryPackage: PolicyRepositoryPackage, useResourceArns = false): string {
-        const repositoryDomainOwner = useResourceArns ? "*" : this.repositoryDomainOwner;
-        const repositoryDomainName = useResourceArns ? "*" : this.repositoryDomainName;
+        const repositoryDomainOwner = useResourceArns ? "*" : this.repositoryDomain.domainOwner;
+        const repositoryDomainName = useResourceArns ? "*" : this.repositoryDomain.domainName;
         return Stack.of(this).formatArn({
             service: "codeartifact",
             resource: "package",

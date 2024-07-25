@@ -4,7 +4,6 @@ import * as kms from "aws-cdk-lib/aws-kms";
 import {Construct} from "constructs";
 import {CfnDomain} from "./codeartifact.generated";
 import {DOMAIN_CREATE_ACTIONS, DOMAIN_LOGIN_ACTIONS, DOMAIN_READ_ACTIONS} from "./perms";
-import {IRepository} from "./repository";
 import {validate} from "./validation";
 
 /**
