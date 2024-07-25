@@ -21,6 +21,11 @@ export const REPOSITORY_READ_ACTIONS = [
 /**
  * @experimental
  */
+export const REPOSITORY_ASSOCIATE_ACTIONS = ["codeartifact:AssociateWithDownstreamRepository"];
+
+/**
+ * @experimental
+ */
 export const DOMAIN_READ_ACTIONS = [
     "codeartifact:GetDomainPermissionsPolicy",
     "codeartifact:ListRepositoriesInDomain",

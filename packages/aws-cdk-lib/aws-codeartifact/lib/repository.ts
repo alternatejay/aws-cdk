@@ -369,7 +369,7 @@ export class Repository extends Resource implements IRepository {
         return this.grant(identity, [...REPOSITORY_READ_ACTIONS, ...REPOSITORY_WRITE_ACTIONS]);
     }
 
-    private grant(identity: iam.IGrantable, actions: string[]): iam.Grant {
+    public grant(identity: iam.IGrantable, actions: string[]): iam.Grant {
         return iam.Grant.addToPrincipalOrResource({
             grantee: identity,
             actions: actions,
