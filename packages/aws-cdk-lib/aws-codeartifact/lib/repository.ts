@@ -302,7 +302,7 @@ export class Repository extends Resource implements IRepository {
 
         this.validateProps(repositoryName, repositoryDomainName, repositoryDescription);
 
-        this.cfnRepository = new CfnRepository(this, 'Resource', {
+        this.cfnRepository = new CfnRepository(this, "Resource", {
             domainName: repositoryDomainName ?? "", //this is required but need coalesce. The validation will catch this.
             domainOwner: repositoryDomainOwner,
             repositoryName: repositoryName,
@@ -323,7 +323,8 @@ export class Repository extends Resource implements IRepository {
 
         if (!props.policyDocument) {
             const p = props.principal || new iam.AccountRootPrincipal();
-            this.allowReadFromRepository(p).allowWriteToRepository(p);
+            this.allowReadFromRepository(p);
+            this.allowWriteToRepository(p);
         } else {
             this.cfnRepository.permissionsPolicyDocument = props.policyDocument;
         }
@@ -448,40 +449,31 @@ export class Repository extends Resource implements IRepository {
         );
     }
 
-    private createPolicy(principal: iam.IPrincipal, iamActions: string[], resource = "*") {
-        const p = (this.cfnRepository.permissionsPolicyDocument as iam.PolicyDocument) || new iam.PolicyDocument();
-
-        p.addStatements(
-            new iam.PolicyStatement({
-                effect: iam.Effect.ALLOW,
-                principals: [principal],
-                resources: [resource],
-                actions: iamActions
-            })
-        );
-
-        this.cfnRepository.permissionsPolicyDocument = p;
-    }
-
     /**
      * Adds read actions for the principal to the repository's
      * resource policy
      * @param principal The principal for the policy
      * @see https://docs.aws.amazon.com/codeartifact/latest/ug/repo-policies.html
      */
-    public allowReadFromRepository(principal: iam.IPrincipal): Repository {
-        this.createPolicy(principal, [
-            "codeartifact:DescribePackageVersion",
-            "codeartifact:DescribeRepository",
-            "codeartifact:GetPackageVersionReadme",
-            "codeartifact:GetRepositoryEndpoint",
-            "codeartifact:ListPackageVersionAssets",
-            "codeartifact:ListPackageVersionDependencies",
-            "codeartifact:ListPackageVersions",
-            "codeartifact:ListPackages",
-            "codeartifact:ReadFromRepository"
-        ]);
-        return this;
+    public allowReadFromRepository(principal: iam.IPrincipal): iam.AddToResourcePolicyResult {
+        return this.addToResourcePolicy(
+            new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                principals: [principal],
+                actions: [
+                    "codeartifact:DescribePackageVersion",
+                    "codeartifact:DescribeRepository",
+                    "codeartifact:GetPackageVersionReadme",
+                    "codeartifact:GetRepositoryEndpoint",
+                    "codeartifact:ListPackageVersionAssets",
+                    "codeartifact:ListPackageVersionDependencies",
+                    "codeartifact:ListPackageVersions",
+                    "codeartifact:ListPackages",
+                    "codeartifact:ReadFromRepository"
+                ],
+                resources: ["*"]
+            })
+        );
     }
 
     /**
@@ -490,12 +482,10 @@ export class Repository extends Resource implements IRepository {
      * @param principal The principal for the policy
      * @see https://docs.aws.amazon.com/codeartifact/latest/ug/repo-policies.html
      */
-    public allowWriteToRepositoryPackage(principal: iam.IPrincipal, repositoryPackage: PolicyRepositoryPackage): Repository {
-        this.allowWriteToRepository(
-            principal,
+    public allowWriteToRepositoryPackage(principal: iam.IPrincipal, repositoryPackage: PolicyRepositoryPackage): iam.AddToResourcePolicyResult {
+        return this.allowWriteToRepository(principal, [
             `arn:aws:codeartifact:${Aws.REGION}:${this.repositoryDomainOwner}:package/${this.repositoryDomainName}/${this.repositoryName}/${repositoryPackage.packageFormat}/${repositoryPackage.packageNamespace}/${repositoryPackage.packageName}`
-        );
-        return this;
+        ]);
     }
 
     /**
@@ -504,9 +494,15 @@ export class Repository extends Resource implements IRepository {
      * @param principal The principal for the policy
      * @see https://docs.aws.amazon.com/codeartifact/latest/ug/repo-policies.html
      */
-    public allowWriteToRepository(principal: iam.IPrincipal, resource = "*"): Repository {
-        this.createPolicy(principal, ["codeartifact:PublishPackageVersion", "codeartifact:PutPackageMetadata"], resource);
-        return this;
+    public allowWriteToRepository(principal: iam.IPrincipal, resources = ["*"]): iam.AddToResourcePolicyResult {
+        return this.addToResourcePolicy(
+            new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                principals: [principal],
+                actions: ["codeartifact:PublishPackageVersion", "codeartifact:PutPackageMetadata"],
+                resources
+            })
+        );
     }
     /**
      * Adds DeletePacakgeVersion for the principal to the repository's
@@ -514,9 +510,15 @@ export class Repository extends Resource implements IRepository {
      * @param principal The principal for the policy
      * @see https://docs.aws.amazon.com/codeartifact/latest/ug/repo-policies.html
      */
-    public allowDeleteFromRepository(principal: iam.IPrincipal): Repository {
-        this.createPolicy(principal, ["codeartifact:DeletePackageVersion"]);
-        return this;
+    public allowDeleteFromRepository(principal: iam.IPrincipal, resources = ["*"]): iam.AddToResourcePolicyResult {
+        return this.addToResourcePolicy(
+            new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                principals: [principal],
+                actions: ["codeartifact:DeletePackageVersion"],
+                resources
+            })
+        );
     }
 
     /**
