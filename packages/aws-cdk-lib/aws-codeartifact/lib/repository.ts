@@ -482,10 +482,26 @@ export class Repository extends Resource implements IRepository {
      * @param principal The principal for the policy
      * @see https://docs.aws.amazon.com/codeartifact/latest/ug/repo-policies.html
      */
-    public allowWriteToRepositoryPackage(principal: iam.IPrincipal, repositoryPackage: PolicyRepositoryPackage): iam.AddToResourcePolicyResult {
-        return this.allowWriteToRepository(principal, [
-            `arn:aws:codeartifact:${Aws.REGION}:${this.repositoryDomainOwner}:package/${this.repositoryDomainName}/${this.repositoryName}/${repositoryPackage.packageFormat}/${repositoryPackage.packageNamespace}/${repositoryPackage.packageName}`
-        ]);
+    public allowWriteToRepositoryPackages(
+        principal: iam.IPrincipal,
+        repositoryPackages: PolicyRepositoryPackage[]
+    ): iam.AddToResourcePolicyResult {
+        const resources = repositoryPackages.map((repositoryPackage) => this.packageArn(repositoryPackage, true));
+        return this.allowWriteToRepository(principal, resources);
+    }
+
+    /**
+     * Allows PublishPackageVersion, PutPackageMetadata and DeletePackageVersions for the package
+     * when acted upon by the principal.
+     * @param principal The principal for the policy
+     * @see https://docs.aws.amazon.com/codeartifact/latest/ug/repo-policies.html
+     */
+    public allowWriteDeleteOnRepositoryPackages(
+        principal: iam.IPrincipal,
+        repositoryPackages: PolicyRepositoryPackage[]
+    ): iam.AddToResourcePolicyResult {
+        const resources = repositoryPackages.map((repositoryPackage) => this.packageArn(repositoryPackage, true));
+        return this.allowWriteDeleteOnRepository(principal, resources);
     }
 
     /**
@@ -515,10 +531,51 @@ export class Repository extends Resource implements IRepository {
             new iam.PolicyStatement({
                 effect: iam.Effect.ALLOW,
                 principals: [principal],
-                actions: ["codeartifact:DeletePackageVersion"],
+                actions: ["codeartifact:DeletePackageVersions"],
                 resources
             })
         );
+    }
+    /**
+     * Adds PublishPackageVersion, PutPackageMetadata, and DeletePackageVersion for the principal
+     * to the repository's resource policy
+     * @param principal The principal for the policy
+     * @param resources The resources for the policy
+     * @see https://docs.aws.amazon.com/codeartifact/latest/ug/repo-policies.html
+     */
+    public allowWriteDeleteOnRepository(principal: iam.IPrincipal, resources = ["*"]): iam.AddToResourcePolicyResult {
+        return this.addToResourcePolicy(
+            new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                principals: [principal],
+                actions: ["codeartifact:PublishPackageVersion", "codeartifact:PutPackageMetadata", "codeartifact:DeletePackageVersions"],
+                resources
+            })
+        );
+    }
+
+    /**
+     * Formulate a package arn for this repository
+     * @param repositoryPackage The package to formulate the arn for
+     */
+    public packageArn(repositoryPackage: PolicyRepositoryPackage, useResourceArns = false): string {
+        const repositoryDomainOwner = useResourceArns ? "*" : this.repositoryDomainOwner;
+        const repositoryDomainName = useResourceArns ? "*" : this.repositoryDomainName;
+        return Stack.of(this).formatArn({
+            service: "codeartifact",
+            resource: "package",
+            region: useResourceArns ? "*" : undefined,
+            account: useResourceArns ? "*" : undefined,
+            partition: useResourceArns ? "*" : undefined,
+            arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
+            resourceName: [
+                repositoryDomainOwner,
+                repositoryDomainName,
+                repositoryPackage.packageFormat,
+                repositoryPackage.packageNamespace,
+                repositoryPackage.packageName
+            ].join("/")
+        });
     }
 
     /**
