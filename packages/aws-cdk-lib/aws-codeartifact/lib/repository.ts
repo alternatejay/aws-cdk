@@ -5,7 +5,7 @@ import {Construct} from "constructs";
 import {CfnRepository} from "./codeartifact.generated";
 import {Domain, IDomain} from "./domain";
 import {ExternalConnection} from "./external-connection";
-import {REPOSITORY_READ_ACTIONS, REPOSITORY_WRITE_ACTIONS} from "./perms";
+import * as perms from "./perms";
 import {validate} from "./validation";
 
 /**
@@ -336,15 +336,26 @@ export class Repository extends Resource implements IRepository {
     }
 
     public grantRead(identity: iam.IGrantable): iam.Grant {
-        return this.grant(identity, [...REPOSITORY_READ_ACTIONS]);
+        return this.grant(identity, [...perms.REPOSITORY_READ_ACTIONS]);
+    }
+    public grantReadAssociate(identity: iam.IGrantable): iam.Grant {
+        return this.grant(identity, [...perms.REPOSITORY_READ_ACTIONS, ...perms.REPOSITORY_ASSOCIATE_ACTIONS]);
     }
 
     public grantWrite(identity: iam.IGrantable): iam.Grant {
-        return this.grant(identity, [...REPOSITORY_WRITE_ACTIONS]);
+        return this.grant(identity, [...perms.REPOSITORY_WRITE_ACTIONS]);
     }
 
     public grantReadWrite(identity: iam.IGrantable): iam.Grant {
-        return this.grant(identity, [...REPOSITORY_READ_ACTIONS, ...REPOSITORY_WRITE_ACTIONS]);
+        return this.grant(identity, [...perms.REPOSITORY_READ_ACTIONS, ...perms.REPOSITORY_WRITE_ACTIONS]);
+    }
+
+    public grantReadWriteDeletePackage(identity: iam.IGrantable): iam.Grant {
+        return this.grant(identity, [
+            ...perms.REPOSITORY_READ_ACTIONS,
+            ...perms.REPOSITORY_WRITE_ACTIONS,
+            ...perms.REPOSITORY_DELETE_PACKAGE_ACTIONS
+        ]);
     }
 
     public grant(identity: iam.IGrantable, actions: string[]): iam.Grant {

@@ -6,6 +6,11 @@ export const REPOSITORY_WRITE_ACTIONS = ["codeartifact:PublishPackageVersion", "
 /**
  * @experimental
  */
+export const REPOSITORY_DELETE_PACKAGE_ACTIONS = ["codeartifact:DeletePackageVersions"];
+
+/**
+ * @experimental
+ */
 export const REPOSITORY_READ_ACTIONS = [
     "codeartifact:DescribePackageVersion",
     "codeartifact:DescribeRepository",
