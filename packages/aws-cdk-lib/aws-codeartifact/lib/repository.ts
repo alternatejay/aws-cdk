@@ -6,6 +6,7 @@ import {CfnRepository} from "./codeartifact.generated";
 import {Domain, IDomain} from "./domain";
 import {ExternalConnection} from "./external-connection";
 import * as perms from "./perms";
+import {PackageFormat} from "./repository-package";
 import {validate} from "./validation";
 
 /**
@@ -151,7 +152,7 @@ export interface PolicyRepositoryPackage {
     /**
      * Package format
      */
-    readonly packageFormat: string;
+    readonly packageFormat: PackageFormat;
     /**
      * Package namespace
      */
@@ -358,12 +359,11 @@ export class Repository extends Resource implements IRepository {
         ]);
     }
 
-    public grant(identity: iam.IGrantable, actions: string[]): iam.Grant {
+    public grant(identity: iam.IGrantable, actions: string[], resourceArns: string[] = ["*"]): iam.Grant {
         return iam.Grant.addToPrincipalOrResource({
             grantee: identity,
             actions: actions,
-            resourceArns: [this.repositoryArn || ""],
-            resourceSelfArns: ["*"],
+            resourceArns,
             resource: this
         });
     }
