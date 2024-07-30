@@ -163,6 +163,12 @@ export interface PolicyRepositoryPackage {
     readonly packageName: string;
 }
 
+export const PolicyRepositoryAnyPackage: PolicyRepositoryPackage = {
+    packageFormat: PackageFormat.ANY,
+    packageNamespace: "*",
+    packageName: "*"
+};
+
 /**
  * An imported CodeArtifact repository
  */
@@ -351,12 +357,17 @@ export class Repository extends Resource implements IRepository {
         return this.grant(identity, [...perms.REPOSITORY_READ_ACTIONS, ...perms.REPOSITORY_WRITE_ACTIONS]);
     }
 
-    public grantReadWriteDeletePackage(identity: iam.IGrantable): iam.Grant {
-        return this.grant(identity, [
-            ...perms.REPOSITORY_READ_ACTIONS,
-            ...perms.REPOSITORY_WRITE_ACTIONS,
-            ...perms.REPOSITORY_DELETE_PACKAGE_ACTIONS
-        ]);
+    public grantReadWriteDeletePackage(
+        identity: iam.IGrantable,
+        packages: PolicyRepositoryPackage[] = [PolicyRepositoryAnyPackage]
+    ): iam.Grant {
+        return this.grant(
+            identity,
+            [...perms.REPOSITORY_READ_ACTIONS, ...perms.REPOSITORY_WRITE_ACTIONS, ...perms.REPOSITORY_DELETE_PACKAGE_ACTIONS],
+            packages.map((p) => {
+                return this.packageArn(p, true);
+            })
+        );
     }
 
     public grant(identity: iam.IGrantable, actions: string[], resourceArns: string[] = ["*"]): iam.Grant {
